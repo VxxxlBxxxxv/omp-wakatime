@@ -1,7 +1,6 @@
 // see DP.SC.182, DP.ROLE.071
 import * as path from "node:path";
 import type { ExtensionAPI, ExtensionContext, ToolResultEvent } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/types";
-import { VERSION as OMP_VERSION } from "@oh-my-pi/pi-coding-agent";
 import { Dependencies } from "./dependencies.js";
 import { HeartbeatSender } from "./heartbeat.js";
 import { VERSION } from "./version.js";
@@ -22,13 +21,12 @@ import type { HeartbeatRequest } from "./types.js";
 
 
 
-function buildPluginString(): string {
-  return `oh-my-pi/${OMP_VERSION} omp-wakatime/${VERSION}`;
+function buildPluginString(pi: ExtensionAPI): string {
+  return `oh-my-pi/${pi.pi.VERSION || "unknown"} omp-wakatime/${VERSION}`;
 }
 
 function sessionId(ctx: ExtensionContext): string {
-  const manager = ctx.sessionManager as { getSessionId?: () => string } | undefined;
-  return manager?.getSessionId?.() || ctx.cwd;
+  return ctx.sessionManager.getSessionId() || ctx.cwd;
 }
 
 function inputRecord(input: unknown): Record<string, unknown> {
@@ -41,7 +39,7 @@ export default function ompWakatime(pi: ExtensionAPI): void {
   const dependencies = new Dependencies();
   const sender = new HeartbeatSender({
     dependencies,
-    plugin: buildPluginString(),
+    plugin: buildPluginString(pi),
   });
 
   const initPromise = sender.init();
