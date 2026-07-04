@@ -17,20 +17,26 @@ WakaTime activity tracking extension for [Oh My Pi](https://omp.sh) / `@oh-my-pi
 - Fails open: WakaTime errors never break OMP tool calls.
 - Adds `--sync-ai-disabled`; prompt and tool output are never sent as heartbeat data.
 
-## Install
-
-```bash
-omp install omp-wakatime
-```
-
-For local development:
+## Install from GitHub
 
 ```bash
 git clone https://github.com/VxxxlBxxxxv/omp-wakatime.git
 cd omp-wakatime
 npm install
 npm run build
+omp install .
+```
+
+For a one-session smoke test without installing:
+
+```bash
 omp -e ./dist/index.js
+```
+
+After an npm release exists, the package-name form should be:
+
+```bash
+omp install omp-wakatime
 ```
 
 ## Configure WakaTime
