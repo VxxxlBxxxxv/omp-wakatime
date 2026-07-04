@@ -1,0 +1,65 @@
+{
+  "name": "omp-wakatime",
+  "version": "0.1.0",
+  "description": "WakaTime activity tracking extension for Oh My Pi (OMP)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "omp": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "oh-my-pi",
+    "omp",
+    "wakatime",
+    "heartbeat",
+    "time-tracking",
+    "ai-coding",
+    "coding-analytics"
+  ],
+  "author": "Vasyl Barkov",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VxxxlBxxxxv/omp-wakatime.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VxxxlBxxxxv/omp-wakatime/issues"
+  },
+  "homepage": "https://github.com/VxxxlBxxxxv/omp-wakatime#readme",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "peerDependencies": {
+    "@oh-my-pi/pi-coding-agent": ">=16.0.0"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.17"
+  },
+  "devDependencies": {
+    "@oh-my-pi/pi-coding-agent": "^16.3.6",
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^25.0.3",
+    "tsx": "^4.22.3",
+    "typescript": "^5.9.0"
+  }
+}
