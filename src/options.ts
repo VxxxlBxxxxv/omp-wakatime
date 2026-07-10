@@ -31,3 +31,11 @@ export function getSetting(section: string, key: string): string | undefined {
 export function isDebugEnabled(): boolean {
   return getSetting("settings", "debug") === "true" || process.env.OMP_WAKATIME_DEBUG === "1";
 }
+
+export function hasApiKey(): boolean {
+  if (process.env.WAKATIME_API_KEY?.trim()) return true;
+  if (getSetting("settings", "api_key")?.trim()) return true;
+  // Vault command means the key is resolved by wakatime-cli at send time.
+  if (getSetting("settings", "api_key_vault_cmd")?.trim()) return true;
+  return false;
+}

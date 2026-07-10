@@ -4,6 +4,7 @@ import type { ExecFileException, ExecFileOptionsWithStringEncoding } from "node:
 import type { Dependencies } from "./dependencies.js";
 import type { HeartbeatRequest } from "./types.js";
 import { logger } from "./logger.js";
+import { hasApiKey, isDebugEnabled } from "./options.js";
 import { shouldSendHeartbeat, updateLastHeartbeat } from "./state.js";
 
 export const WAKATIME_CLI_TIMEOUT_MS = 30_000;
@@ -28,13 +29,17 @@ type QueuedHeartbeat = {
   request: HeartbeatRequest;
 };
 
-export function buildHeartbeatArgs(plugin: string, request: HeartbeatRequest): string[] {
+export function buildHeartbeatArgs(plugin: string, request: HeartbeatRequest, verbose = false): string[] {
   const args = [
     "--entity", request.entity,
     "--entity-type", "file",
     "--plugin", plugin,
     "--sync-ai-disabled",
   ];
+
+  if (verbose) {
+    args.push("--verbose");
+  }
 
   if (request.projectFolder) {
     args.push("--project-folder", request.projectFolder);
@@ -63,6 +68,7 @@ export class HeartbeatSender {
   private readonly execFile: ExecFileFn;
   private readonly queue: QueuedHeartbeat[] = [];
   private readonly sessionHeartbeatsInFlight = new Set<string>();
+  private readonly verbose = isDebugEnabled();
   private processing = false;
   private initialized = false;
 
@@ -73,6 +79,16 @@ export class HeartbeatSender {
   }
 
   async init(): Promise<boolean> {
+    if (!hasApiKey()) {
+      // Guide requirement: verify api key at initialization. A headless runtime
+      // cannot prompt, so surface one actionable error instead of silent per-heartbeat failures.
+      logger.error(
+        "WakaTime API key not found — heartbeats will fail. "
+        + "Add it to ~/.wakatime.cfg ([settings] api_key=YOUR_KEY, key from https://wakatime.com/api-key) "
+        + "or set the WAKATIME_API_KEY environment variable.",
+      );
+    }
+
     try {
       await this.dependencies.checkAndInstallCli();
       this.initialized = true;
@@ -94,7 +110,7 @@ export class HeartbeatSender {
     const cliPath = this.dependencies.getCliLocation();
     this.queue.push({
       cliPath,
-      args: buildHeartbeatArgs(this.plugin, request),
+      args: buildHeartbeatArgs(this.plugin, request, this.verbose),
       request,
     });
 
@@ -105,7 +121,7 @@ export class HeartbeatSender {
     const cliPath = this.dependencies.getCliLocation();
     await this.execute({
       cliPath,
-      args: buildHeartbeatArgs(this.plugin, request),
+      args: buildHeartbeatArgs(this.plugin, request, this.verbose),
       request,
     });
   }

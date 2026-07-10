@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import assert from "node:assert/strict";
@@ -14,6 +14,7 @@ import {
   trackRead,
   trackWrite,
 } from "../src/public.js";
+import { VERSION } from "../src/version.js";
 
 const RESET_PROJECT = process.cwd();
 
@@ -189,4 +190,9 @@ test("flushPending skips directory entities, emits file heartbeats, and clears p
   assert.equal(heartbeats[0].category, "coding");
   assert.equal(pendingCount(), 0);
   assert.deepEqual(flushPending(project), []);
+});
+
+test("VERSION constant stays in sync with package.json (drift would corrupt the User-Agent)", () => {
+  const packageJson = JSON.parse(readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8")) as { version: string };
+  assert.equal(VERSION, packageJson.version);
 });

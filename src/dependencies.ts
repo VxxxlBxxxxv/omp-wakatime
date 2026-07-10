@@ -62,9 +62,30 @@ export class Dependencies {
       ?.trim();
 
     if (!location) return undefined;
+
+    if (!this.cliSupportsRequiredFlags(location)) {
+      logger.warn("Global wakatime-cli is too old (missing AI heartbeat flags); using bundled CLI instead", { location });
+      return undefined;
+    }
+
     this.globalCliLocation = location;
     logger.debug("Using global wakatime-cli", { location });
     return location;
+  }
+
+  private cliSupportsRequiredFlags(cliPath: string): boolean {
+    // Heartbeat args include flags added in recent wakatime-cli releases
+    // (--sync-ai-disabled, --ai-line-changes). A stale global binary would
+    // reject every heartbeat with "unknown flag", so probe capabilities first.
+    const result = spawnSync(cliPath, ["--help"], {
+      encoding: "utf8",
+      windowsHide: true,
+      timeout: 10_000,
+    });
+
+    if (result.status !== 0) return false;
+    const help = `${result.stdout || ""}${result.stderr || ""}`;
+    return help.includes("--sync-ai-disabled") && help.includes("--ai-line-changes");
   }
 
   isCliInstalled(): boolean {

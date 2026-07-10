@@ -119,6 +119,24 @@ Not sent by this extension:
 
 WakaTime is a metadata SaaS. If project/file path metadata is sensitive, use a self-hosted WakaTime-compatible backend such as Wakapi or do not enable this extension.
 
+## Heartbeat batching (design decision)
+
+The official plugin guide targets interactive editors: send a heartbeat when enough time passed, the focused file changed, or a file was saved. An agent runtime produces hundreds of tool events per session, so this extension deliberately batches instead:
+
+- file activity accumulates in a pending map and flushes at most once per 60 seconds per project;
+- save events are merged into the batch (they set `--write` but do not bypass the interval), so a write heartbeat can lag its actual timestamp by up to 60 seconds;
+- session shutdown force-flushes everything pending.
+
+wakatime-cli deduplicates on its side, so total tracked time is unaffected; only per-heartbeat timestamps are coarser.
+
+## Troubleshooting
+
+- **No time shows up in WakaTime.** Check the API key: `~/.wakatime.cfg` must contain `[settings]` / `api_key = ...` (key from https://wakatime.com/api-key), or set `WAKATIME_API_KEY`. A missing key is reported once at startup in the extension log.
+- **Extension log:** `~/.wakatime/omp-wakatime.log` (respects `$WAKATIME_HOME`). wakatime-cli writes its own log to `~/.wakatime/wakatime.log`.
+- **Debug mode:** set `debug = true` in `~/.wakatime.cfg` or export `OMP_WAKATIME_DEBUG=1`. This also passes `--verbose` to wakatime-cli.
+- **Old global wakatime-cli.** If a `wakatime-cli` on `PATH` lacks the AI heartbeat flags (`--sync-ai-disabled`, `--ai-line-changes`), the extension ignores it and uses its bundled CLI; look for "Global wakatime-cli is too old" in the log.
+- **Verify ingestion:** your activity should appear as editor "Omp" on the WakaTime dashboard, or query the [User Agents API](https://wakatime.com/developers#user_agents).
+
 ## Development
 
 ```bash
