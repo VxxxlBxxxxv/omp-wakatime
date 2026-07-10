@@ -19,8 +19,6 @@ import { resolvePath } from "./utils.js";
 import { shouldSendHeartbeat, updateLastHeartbeat } from "./state.js";
 import type { HeartbeatRequest } from "./types.js";
 
-
-
 function buildPluginString(pi: ExtensionAPI): string {
   return `oh-my-pi/${pi.pi.VERSION || "unknown"} omp-wakatime/${VERSION}`;
 }
