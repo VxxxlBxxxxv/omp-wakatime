@@ -135,7 +135,7 @@ wakatime-cli deduplicates on its side, so total tracked time is unaffected; only
 - **Extension log:** `~/.wakatime/omp-wakatime.log` (respects `$WAKATIME_HOME`). wakatime-cli writes its own log to `~/.wakatime/wakatime.log`.
 - **Debug mode:** set `debug = true` in `~/.wakatime.cfg` or export `OMP_WAKATIME_DEBUG=1`. This also passes `--verbose` to wakatime-cli.
 - **Old global wakatime-cli.** If a `wakatime-cli` on `PATH` lacks the AI heartbeat flags (`--sync-ai-disabled`, `--ai-line-changes`), the extension ignores it and uses its bundled CLI; look for "Global wakatime-cli is too old" in the log.
-- **Verify ingestion:** your activity should appear as editor "Omp" on the WakaTime dashboard, or query the [User Agents API](https://wakatime.com/developers#user_agents).
+- **Verify ingestion:** your activity should appear as editor "omp" on the WakaTime dashboard (WakaTime may capitalize it as "Omp"), or query the [User Agents API](https://wakatime.com/developers#user_agents).
 
 ## Development
 
