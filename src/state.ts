@@ -4,7 +4,9 @@ import * as path from "node:path";
 import { getProjectStateDir } from "./paths.js";
 import type { HeartbeatState } from "./types.js";
 
-export const DEFAULT_HEARTBEAT_INTERVAL_MS = 60_000;
+// WakaTime plugin guide: send a heartbeat when more than two minutes passed,
+// the file changed, or the file was saved. This is the "two minutes" bound.
+export const DEFAULT_HEARTBEAT_INTERVAL_MS = 120_000;
 
 function safeName(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex").slice(0, 16);
@@ -46,4 +48,11 @@ export function shouldSendHeartbeat(
 
 export function updateLastHeartbeat(key: string, now = Date.now()): void {
   writeState(key, { lastHeartbeatAt: now });
+}
+
+// WakaTime plugin guide file-heartbeat rule: always send on a save/write; for a
+// plain read, honour the per-file interval (a file never seen before has no
+// stored timestamp, so its first read sends immediately = "the file changed").
+export function shouldSendFileHeartbeat(entity: string, isWrite: boolean, now = Date.now()): boolean {
+  return isWrite || shouldSendHeartbeat(entity, false, now);
 }

@@ -13,7 +13,7 @@ WakaTime activity tracking extension for [Oh My Pi](https://omp.sh) / `@oh-my-pi
 - Reports AI line changes with `--ai-line-changes` for write/edit/ast_edit.
 - Uses `wakatime-cli`, `~/.wakatime.cfg`, and `$WAKATIME_HOME` conventions.
 - Finds global `wakatime-cli`; otherwise downloads a local CLI into WakaTime resources.
-- Rate-limits normal heartbeats to 1/min/project and force-flushes on shutdown.
+- Rate-limits reads per file (once per 2 minutes), sends saves immediately, and force-flushes on shutdown.
 - Fails open: WakaTime errors never break OMP tool calls.
 - Adds `--sync-ai-disabled`; prompt and tool output are never sent as heartbeat data.
 
@@ -119,15 +119,16 @@ Not sent by this extension:
 
 WakaTime is a metadata SaaS. If project/file path metadata is sensitive, use a self-hosted WakaTime-compatible backend such as Wakapi or do not enable this extension.
 
-## Heartbeat batching (design decision)
+## Heartbeat cadence
 
-The official plugin guide targets interactive editors: send a heartbeat when enough time passed, the focused file changed, or a file was saved. An agent runtime produces hundreds of tool events per session, so this extension deliberately batches instead:
+The extension follows the official plugin guide rule, keyed per file: send a heartbeat when the file was saved, when it changed (first activity on a file), or when more than two minutes passed since that file's last heartbeat.
 
-- file activity accumulates in a pending map and flushes at most once per 60 seconds per project;
-- save events are merged into the batch (they set `--write` but do not bypass the interval), so a write heartbeat can lag its actual timestamp by up to 60 seconds;
-- session shutdown force-flushes everything pending.
+- each touched file is rate-limited on its own key, not behind a single project-wide timer;
+- save/write events bypass the interval and send immediately, so a write heartbeat carries its real timestamp;
+- a repeated read on the same file within two minutes is skipped (the next activity re-evaluates it);
+- session shutdown force-flushes everything still pending.
 
-wakatime-cli deduplicates on its side, so total tracked time is unaffected; only per-heartbeat timestamps are coarser.
+An agent runtime produces many tool events per session; wakatime-cli deduplicates on its side, so the per-file interval keeps traffic reasonable without coarsening save timestamps.
 
 ## Troubleshooting
 

@@ -7,12 +7,15 @@ import type { TestContext } from "node:test";
 
 import {
   buildHeartbeatArgs,
+  DEFAULT_HEARTBEAT_INTERVAL_MS,
   flushPending,
   pendingCount,
   resolveEditDetails,
+  shouldSendFileHeartbeat,
   trackEdit,
   trackRead,
   trackWrite,
+  updateLastHeartbeat,
 } from "../src/public.js";
 import { VERSION } from "../src/version.js";
 
@@ -190,6 +193,33 @@ test("flushPending skips directory entities, emits file heartbeats, and clears p
   assert.equal(heartbeats[0].category, "coding");
   assert.equal(pendingCount(), 0);
   assert.deepEqual(flushPending(project), []);
+});
+
+test("file heartbeats follow the WakaTime guide rule: save always sends, read waits out the per-file interval", (t) => {
+  const wakatimeHome = mkdtempSync(join(tmpdir(), "omp-wakatime-home-"));
+  const previousHome = process.env.WAKATIME_HOME;
+  process.env.WAKATIME_HOME = wakatimeHome;
+  t.after(() => {
+    if (previousHome === undefined) delete process.env.WAKATIME_HOME;
+    else process.env.WAKATIME_HOME = previousHome;
+    rmSync(wakatimeHome, { recursive: true, force: true });
+  });
+
+  const fileA = join(wakatimeHome, "a.ts");
+  const fileB = join(wakatimeHome, "b.ts");
+  const now = 1_000_000;
+
+  // A file never seen before sends on first read ("the file changed").
+  assert.equal(shouldSendFileHeartbeat(fileA, false, now), true);
+
+  updateLastHeartbeat(fileA, now);
+  // A repeated read on the same file is held until its own interval elapses.
+  assert.equal(shouldSendFileHeartbeat(fileA, false, now + DEFAULT_HEARTBEAT_INTERVAL_MS - 1), false);
+  assert.equal(shouldSendFileHeartbeat(fileA, false, now + DEFAULT_HEARTBEAT_INTERVAL_MS), true);
+  // A save bypasses the interval entirely.
+  assert.equal(shouldSendFileHeartbeat(fileA, true, now + 1), true);
+  // The interval is keyed per file, so another file is unaffected by fileA's timestamp.
+  assert.equal(shouldSendFileHeartbeat(fileB, false, now + 1), true);
 });
 
 test("VERSION constant stays in sync with package.json (drift would corrupt the User-Agent)", () => {

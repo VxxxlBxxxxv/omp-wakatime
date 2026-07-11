@@ -16,7 +16,7 @@ import {
   trackWrite,
 } from "./tracker.js";
 import { resolvePath } from "./utils.js";
-import { shouldSendHeartbeat, updateLastHeartbeat } from "./state.js";
+import { shouldSendFileHeartbeat, updateLastHeartbeat } from "./state.js";
 import type { HeartbeatRequest } from "./types.js";
 
 function buildPluginString(pi: ExtensionAPI): string {
@@ -61,7 +61,7 @@ export default function ompWakatime(pi: ExtensionAPI): void {
 
     if (event.isError) return;
     trackFileEvent(event, projectFolder);
-    flushWhenReady(projectFolder, sender);
+    flushFileHeartbeats(projectFolder, sender);
   });
 
   pi.on("session_shutdown", async () => {
@@ -128,13 +128,15 @@ function trackFileEvent(event: ToolResultEvent, projectFolder: string): void {
   }
 }
 
-function flushWhenReady(projectFolder: string, sender: HeartbeatSender): void {
+// Evaluate each touched file on its own key (WakaTime guide), instead of batching
+// the whole project behind one timer: a save sends at once, a repeated read on the
+// same file waits out its per-file interval, a newly touched file sends immediately.
+function flushFileHeartbeats(projectFolder: string, sender: HeartbeatSender): void {
   if (pendingCount() === 0) return;
-  if (!shouldSendHeartbeat(projectFolder)) return;
 
-  const payloads = flushPending(projectFolder);
-  updateLastHeartbeat(projectFolder);
-  for (const payload of payloads) {
+  for (const payload of flushPending(projectFolder)) {
+    if (!shouldSendFileHeartbeat(payload.entity, payload.isWrite === true)) continue;
+    updateLastHeartbeat(payload.entity);
     sender.track(payload);
   }
 }

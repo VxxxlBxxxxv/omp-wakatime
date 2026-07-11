@@ -1,5 +1,5 @@
 import { isDirectory, countLines, resolvePath } from "./utils.js";
-import type { AstEditDetails, EditDetails, HeartbeatRequest } from "./types.js";
+import type { AstEditDetails, EditDetails, FileHeartbeatRequest } from "./types.js";
 import { logger } from "./logger.js";
 
 type FileChange = {
@@ -93,8 +93,8 @@ export function resolveAstEditDetails(details: unknown, projectFolder: string): 
   };
 }
 
-export function flushPending(projectFolder: string): HeartbeatRequest[] {
-  const payloads: HeartbeatRequest[] = [];
+export function flushPending(projectFolder: string): FileHeartbeatRequest[] {
+  const payloads: FileHeartbeatRequest[] = [];
 
   for (const [entity, change] of pending) {
     if (isDirectory(entity)) {
